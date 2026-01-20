@@ -249,7 +249,7 @@ export const Users = () => {
                                                 className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                                                 title="Kullanıcıyı Sil"
                                             >
-                                                <TrashIcon className="w-5 h-5" />
+                                                <TrashIcon className="w-5 h-5 pointer-events-none" />
                                             </button>
                                         </div>
                                     </div>
