@@ -8,7 +8,8 @@ import {
     UserIcon,
     ShieldCheckIcon,
     EnvelopeIcon,
-    PlusIcon
+    PlusIcon,
+    TrashIcon
 } from '@heroicons/react/24/outline';
 import { CreateUserModal } from '../components/users/CreateUserModal';
 
@@ -64,6 +65,41 @@ export const Users = () => {
             setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
         } catch (error) {
             console.error('Error updating role:', error);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`"${userName}" kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+            return;
+        }
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Oturum bulunamadı');
+                return;
+            }
+
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${apiUrl}/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Kullanıcı silinemedi');
+            }
+
+            setUsers(users.filter(u => u.id !== userId));
+            alert('Kullanıcı başarıyla silindi');
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert(error instanceof Error ? error.message : 'Kullanıcı silinemedi');
         }
     };
 
@@ -204,6 +240,13 @@ export const Users = () => {
                                                 <option value="employee">Çalışan</option>
                                                 <option value="admin">Admin</option>
                                             </select>
+                                            <button
+                                                onClick={() => handleDeleteUser(user.id, user.full_name)}
+                                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                title="Kullanıcıyı Sil"
+                                            >
+                                                <TrashIcon className="w-5 h-5" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
