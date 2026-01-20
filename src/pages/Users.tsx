@@ -241,8 +241,12 @@ export const Users = () => {
                                                 <option value="admin">Admin</option>
                                             </select>
                                             <button
-                                                onClick={() => handleDeleteUser(user.id, user.full_name)}
-                                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                type="button"
+                                                onClick={() => {
+                                                    console.log('Delete button clicked for:', user.id, user.full_name);
+                                                    handleDeleteUser(user.id, user.full_name);
+                                                }}
+                                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                                                 title="Kullanıcıyı Sil"
                                             >
                                                 <TrashIcon className="w-5 h-5" />
