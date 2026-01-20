@@ -245,7 +245,6 @@ export const Users = () => {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     e.preventDefault();
-                                                    window.alert('Silme butonu tıklandı: ' + user.full_name);
                                                     handleDeleteUser(user.id, user.full_name);
                                                 }}
                                                 className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
