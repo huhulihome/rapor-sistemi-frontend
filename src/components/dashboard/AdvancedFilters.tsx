@@ -58,7 +58,7 @@ export const AdvancedFilters = ({
       const newValues = currentValues.includes(value)
         ? currentValues.filter(v => v !== value)
         : [...currentValues, value];
-      
+
       return {
         ...prev,
         [field]: newValues.length > 0 ? newValues : undefined,
@@ -105,7 +105,7 @@ export const AdvancedFilters = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FunnelIcon className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Gelişmiş Filtreler</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Gelişmiş Filtreler</h3>
             {activeFilterCount > 0 && (
               <span className="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
                 {activeFilterCount} aktif
