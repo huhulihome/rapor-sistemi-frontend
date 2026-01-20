@@ -1,0 +1,1 @@
+import"./react-vendor-BrW68ebb.js";import"./supabase-vendor-CLitCmdP.js";import"./NotificationBell-D0CR4O40.js";import"./Layout-DFNvthLu.js";import"./Modal-VQNNPo-d.js";import"./Input-BF1wqZNq.js";import"./Card-CQwe59rg.js";import{t as o}from"./TaskDetail-C2WIGZCr.js";export{o as TaskDetail};
