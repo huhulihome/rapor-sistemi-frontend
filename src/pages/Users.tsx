@@ -9,7 +9,8 @@ import {
     ShieldCheckIcon,
     EnvelopeIcon,
     PlusIcon,
-    TrashIcon
+    TrashIcon,
+    KeyIcon
 } from '@heroicons/react/24/outline';
 import { CreateUserModal } from '../components/users/CreateUserModal';
 
@@ -31,6 +32,9 @@ export const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [resetPasswordUser, setResetPasswordUser] = useState<{ id: string, name: string } | null>(null);
+    const [newPassword, setNewPassword] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -100,6 +104,48 @@ export const Users = () => {
         } catch (error) {
             console.error('Error deleting user:', error);
             alert(error instanceof Error ? error.message : 'Kullanıcı silinemedi');
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!resetPasswordUser || !newPassword) return;
+        if (newPassword.length < 6) {
+            alert('Şifre en az 6 karakter olmalıdır');
+            return;
+        }
+
+        setResetLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Oturum bulunamadı');
+                return;
+            }
+
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${apiUrl}/api/users/${resetPasswordUser.id}/reset-password`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password: newPassword }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Şifre sıfırlanamadı');
+            }
+
+            alert(`${resetPasswordUser.name} kullanıcısının şifresi başarıyla değiştirildi`);
+            setResetPasswordUser(null);
+            setNewPassword('');
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            alert(error instanceof Error ? error.message : 'Şifre sıfırlanamadı');
+        } finally {
+            setResetLoading(false);
         }
     };
 
@@ -245,6 +291,18 @@ export const Users = () => {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     e.preventDefault();
+                                                    setResetPasswordUser({ id: user.id, name: user.full_name });
+                                                }}
+                                                className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 rounded-lg transition-colors cursor-pointer"
+                                                title="Şifre Sıfırla"
+                                            >
+                                                <KeyIcon className="w-5 h-5 pointer-events-none" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
                                                     handleDeleteUser(user.id, user.full_name);
                                                 }}
                                                 className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
@@ -267,6 +325,62 @@ export const Users = () => {
                 onClose={() => setShowCreateModal(false)}
                 onUserCreated={fetchUsers}
             />
+
+            {/* Reset Password Modal */}
+            {resetPasswordUser && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => { setResetPasswordUser(null); setNewPassword(''); }}
+                    />
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        <div className="relative w-full max-w-md transform rounded-2xl bg-slate-900 border border-white/10 p-6 shadow-xl transition-all">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl">
+                                    <KeyIcon className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">Şifre Sıfırla</h2>
+                                    <p className="text-sm text-slate-400">{resetPasswordUser.name}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Yeni Şifre
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="En az 6 karakter"
+                                        className="w-full px-4 py-2.5 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setResetPasswordUser(null); setNewPassword(''); }}
+                                        className="flex-1 px-4 py-2.5 bg-slate-800 border border-white/10 rounded-lg text-white font-medium hover:bg-slate-700 transition-colors"
+                                    >
+                                        İptal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetPassword}
+                                        disabled={resetLoading || newPassword.length < 6}
+                                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg text-white font-medium hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        {resetLoading ? 'Sıfırlanıyor...' : 'Şifreyi Değiştir'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };
