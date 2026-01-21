@@ -20,6 +20,7 @@ const Analytics = lazy(() => import('./pages/Analytics').then(m => ({ default: m
 const Tasks = lazy(() => import('./pages/Tasks').then(m => ({ default: m.Tasks })));
 const TaskNew = lazy(() => import('./pages/TaskNew').then(m => ({ default: m.TaskNew })));
 const TaskDetailPage = lazy(() => import('./components/tasks/TaskDetail').then(m => ({ default: m.TaskDetail })));
+const TaskEdit = lazy(() => import('./pages/TaskEdit').then(m => ({ default: m.TaskEdit })));
 const Issues = lazy(() => import('./pages/Issues').then(m => ({ default: m.Issues })));
 const AdminIssues = lazy(() => import('./pages/AdminIssues').then(m => ({ default: m.AdminIssues })));
 const Users = lazy(() => import('./pages/Users').then(m => ({ default: m.Users })));
@@ -71,6 +72,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <TaskDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/tasks/:id/edit"
+                    element={
+                      <ProtectedRoute>
+                        <TaskEdit />
                       </ProtectedRoute>
                     }
                   />

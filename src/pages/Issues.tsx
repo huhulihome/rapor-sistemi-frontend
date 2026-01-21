@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import type { Issue } from '../types/database';
-import type { CreateIssueRequest } from '../types/api';
-import { IssueList, IssueForm } from '../components/issues';
+import type { CreateIssueRequest, AssignIssueRequest } from '../types/api';
+import { IssueList, IssueForm, IssueAssignmentModal } from '../components/issues';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Layout } from '../components/common/Layout';
@@ -11,9 +12,12 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 export const Issues: React.FC = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   useEffect(() => {
     fetchIssues();
@@ -106,6 +110,46 @@ export const Issues: React.FC = () => {
     console.log('Issue clicked:', issue);
   };
 
+  const handleAssignIssue = (issue: Issue) => {
+    setSelectedIssue(issue);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignSubmit = async (issueId: string, assignData: AssignIssueRequest) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(
+        `${apiUrl}/api/issues/${issueId}/assign`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(assignData),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Atama başarısız');
+      }
+
+      setShowAssignModal(false);
+      setSelectedIssue(null);
+      fetchIssues();
+    } catch (error) {
+      console.error('Error assigning issue:', error);
+      throw error;
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -131,6 +175,8 @@ export const Issues: React.FC = () => {
         <IssueList
           issues={issues}
           loading={loading}
+          showActions={isAdmin}
+          onAssign={isAdmin ? handleAssignIssue : undefined}
           onIssueClick={handleIssueClick}
           emptyMessage="Henüz sorun bildirimi yok. İlk sorunu siz bildirin!"
         />
@@ -146,6 +192,19 @@ export const Issues: React.FC = () => {
             onCancel={() => setShowCreateModal(false)}
           />
         </Modal>
+
+        {/* Assignment Modal - Only for admin */}
+        {isAdmin && selectedIssue && (
+          <IssueAssignmentModal
+            issue={selectedIssue}
+            isOpen={showAssignModal}
+            onClose={() => {
+              setShowAssignModal(false);
+              setSelectedIssue(null);
+            }}
+            onAssign={handleAssignSubmit}
+          />
+        )}
       </div>
     </Layout>
   );
