@@ -73,38 +73,42 @@ export const Users = () => {
     };
 
     const handleDeleteUser = async (userId: string, userName: string) => {
-        if (!confirm(`"${userName}" kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
-            return;
-        }
-
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                alert('Oturum bulunamadı');
+        // Use setTimeout to prevent confirm dialog from closing immediately
+        setTimeout(async () => {
+            const confirmed = window.confirm(`"${userName}" kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`);
+            if (!confirmed) {
                 return;
             }
 
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    alert('Oturum bulunamadı');
+                    return;
+                }
 
-            const result = await response.json();
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                const response = await fetch(`${apiUrl}/api/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            if (!response.ok) {
-                throw new Error(result.message || 'Kullanıcı silinemedi');
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Kullanıcı silinemedi');
+                }
+
+                setUsers(prev => prev.filter(u => u.id !== userId));
+                alert('Kullanıcı başarıyla silindi');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(error instanceof Error ? error.message : 'Kullanıcı silinemedi');
             }
-
-            setUsers(users.filter(u => u.id !== userId));
-            alert('Kullanıcı başarıyla silindi');
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            alert(error instanceof Error ? error.message : 'Kullanıcı silinemedi');
-        }
+        }, 0);
     };
 
     const handleResetPassword = async () => {

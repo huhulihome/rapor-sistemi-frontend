@@ -103,43 +103,47 @@ export const TaskEdit: React.FC = () => {
         }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!id) return;
 
-        if (!confirm('Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-            return;
-        }
-
-        try {
-            setIsDeleting(true);
-
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                alert('Oturum bulunamadı');
+        // Use setTimeout to prevent confirm dialog from closing immediately
+        setTimeout(async () => {
+            const confirmed = window.confirm('Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.');
+            if (!confirmed) {
                 return;
             }
 
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/tasks/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
-            });
+            try {
+                setIsDeleting(true);
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Görev silinemedi');
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    alert('Oturum bulunamadı');
+                    return;
+                }
+
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                const response = await fetch(`${apiUrl}/api/tasks/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Görev silinemedi');
+                }
+
+                alert('Görev başarıyla silindi');
+                navigate('/tasks');
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                alert(error instanceof Error ? error.message : 'Görev silinemedi');
+            } finally {
+                setIsDeleting(false);
             }
-
-            alert('Görev başarıyla silindi');
-            navigate('/tasks');
-        } catch (error) {
-            console.error('Error deleting task:', error);
-            alert(error instanceof Error ? error.message : 'Görev silinemedi');
-        } finally {
-            setIsDeleting(false);
-        }
+        }, 0);
     };
 
     if (loading) {
@@ -186,11 +190,16 @@ export const TaskEdit: React.FC = () => {
                     </div>
                     {isAdmin && (
                         <button
-                            onClick={handleDelete}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDelete();
+                            }}
                             disabled={isDeleting}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors disabled:opacity-50 cursor-pointer"
                         >
-                            <TrashIcon className="w-5 h-5" />
+                            <TrashIcon className="w-5 h-5 pointer-events-none" />
                             {isDeleting ? 'Siliniyor...' : 'Görevi Sil'}
                         </button>
                     )}
