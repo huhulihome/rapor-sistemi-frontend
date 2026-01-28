@@ -22,6 +22,8 @@ export interface CreateTaskRequest {
   priority: 'low' | 'medium' | 'high' | 'critical';
   assigned_to?: string;
   due_date?: string;
+  start_time?: string;
+  end_time?: string;
   estimated_hours?: number;
   tags?: string[];
 }
@@ -32,6 +34,7 @@ export interface UpdateTaskRequest {
   status?: 'not_started' | 'in_progress' | 'completed' | 'blocked';
   progress_percentage?: number;
   actual_hours?: number;
+  completed_at?: string;
 }
 
 export interface ApiResponse<T> {

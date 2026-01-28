@@ -24,6 +24,7 @@ const TaskEdit = lazy(() => import('./pages/TaskEdit').then(m => ({ default: m.T
 const Issues = lazy(() => import('./pages/Issues').then(m => ({ default: m.Issues })));
 const AdminIssues = lazy(() => import('./pages/AdminIssues').then(m => ({ default: m.AdminIssues })));
 const Users = lazy(() => import('./pages/Users').then(m => ({ default: m.Users })));
+const Deadlines = lazy(() => import('./pages/Deadlines').then(m => ({ default: m.Deadlines })));
 
 function App() {
   return (
@@ -128,6 +129,14 @@ function App() {
                     element={
                       <ProtectedRoute requireAdmin>
                         <Users />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/deadlines"
+                    element={
+                      <ProtectedRoute>
+                        <Deadlines />
                       </ProtectedRoute>
                     }
                   />

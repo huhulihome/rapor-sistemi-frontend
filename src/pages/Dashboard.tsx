@@ -3,12 +3,13 @@ import { Layout } from '../components/common/Layout';
 import { DashboardStats } from '../components/dashboard/DashboardStats';
 import { RecentActivity } from '../components/dashboard/RecentActivity';
 import type { ActivityItem } from '../components/dashboard/RecentActivity';
-import { TaskCompletionChart } from '../components/dashboard/TaskCompletionChart';
+import { TagDistributionChart } from '../components/dashboard/TagDistributionChart';
 import { UserWorkloadChart } from '../components/dashboard/UserWorkloadChart';
 import { IssuePriorityChart } from '../components/dashboard/IssuePriorityChart';
 import { EmployeeSummaryCards } from '../components/dashboard/EmployeeSummaryCards';
 import { AIRecommendations } from '../components/dashboard/AIRecommendations';
 import { DeadlineTimeline } from '../components/dashboard/DeadlineTimeline';
+import { PersonalTodoList } from '../components/dashboard/PersonalTodoList';
 import { Card } from '../components/common/Card';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useQuery } from '@tanstack/react-query';
@@ -157,9 +158,9 @@ export const Dashboard = () => {
           {/* Stats Cards */}
           <DashboardStats stats={stats} />
 
-          {/* Charts Section */}
+          {/* Charts Section - Tag Distribution instead of Task Completion */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TaskCompletionChart />
+            <TagDistributionChart />
             <IssuePriorityChart />
           </div>
 
@@ -170,6 +171,9 @@ export const Dashboard = () => {
 
           {/* Deadline Timeline */}
           <DeadlineTimeline />
+
+          {/* Personal To-Do List */}
+          <PersonalTodoList />
 
           {/* Admin Only: Employee Summary and AI Recommendations */}
           {isAdmin && (

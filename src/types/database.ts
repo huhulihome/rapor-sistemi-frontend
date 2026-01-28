@@ -26,6 +26,8 @@ export interface Task {
   created_by: string;
   related_issue_id?: string;
   due_date?: string;
+  start_time?: string;  // HH:MM format
+  end_time?: string;    // HH:MM format - task should complete by this time
   estimated_hours?: number;
   actual_hours?: number;
   tags: string[];

@@ -35,6 +35,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     priority: initialData?.priority || 'medium',
     assigned_to: initialData?.assigned_to || '',
     due_date: initialData?.due_date || '',
+    start_time: initialData?.start_time || '',
+    end_time: initialData?.end_time || '',
     estimated_hours: initialData?.estimated_hours || undefined,
     tags: initialData?.tags || [],
     is_recurring: false,
@@ -263,6 +265,43 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             onChange={(e) => handleChange('due_date', e.target.value)}
             className={inputClass}
           />
+        </div>
+      </div>
+
+      {/* Time fields - Especially useful for routine tasks */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>
+            Başlangıç Saati
+            <span className="text-slate-500 font-normal ml-1">(Opsiyonel)</span>
+          </label>
+          <input
+            type="time"
+            value={formData.start_time || ''}
+            onChange={(e) => handleChange('start_time', e.target.value)}
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            İş hangi saatte başlamalı
+          </p>
+        </div>
+
+        <div>
+          <label className={labelClass}>
+            Bitiş Saati
+            <span className="text-slate-500 font-normal ml-1">(Opsiyonel)</span>
+          </label>
+          <input
+            type="time"
+            value={formData.end_time || ''}
+            onChange={(e) => handleChange('end_time', e.target.value)}
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            {formData.category === 'routine'
+              ? 'Bu saate kadar tamamlanmalı - sonra gecikmeye düşer'
+              : 'İş en geç bu saatte bitmeli'}
+          </p>
         </div>
       </div>
 

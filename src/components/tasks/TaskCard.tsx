@@ -1,10 +1,12 @@
 import React from 'react';
 import type { Task } from '../../types/database';
 import { classNames } from '../../utils/classNames';
+import { UserCircleIcon } from '@heroicons/react/24/outline';
 
 interface TaskCardProps {
   task: Task;
   onClick?: () => void;
+  showAssignee?: boolean;
 }
 
 const priorityColors = {
@@ -35,8 +37,13 @@ const statusLabels = {
   blocked: 'Engellendi',
 };
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, showAssignee = false }) => {
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+
+  // Get assignee name from task
+  const assigneeName = (task as any).assigned_user?.full_name ||
+    (task as any).profiles?.full_name ||
+    null;
 
   return (
     <div
@@ -71,6 +78,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
           {categoryLabels[task.category]}
         </span>
       </div>
+
+      {/* Assignee display */}
+      {showAssignee && assigneeName && (
+        <div className="flex items-center gap-2 mb-3 text-sm">
+          <UserCircleIcon className="w-4 h-4 text-slate-400" />
+          <span className="text-slate-300">{assigneeName}</span>
+        </div>
+      )}
 
       {task.progress_percentage > 0 && (
         <div className="mb-4">
@@ -107,6 +122,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
               />
             </svg>
             {new Date(task.due_date).toLocaleDateString('tr-TR')}
+            {/* Show time if end_time exists */}
+            {(task as any).end_time && (
+              <span className="ml-1 text-slate-400">
+                {(task as any).end_time.substring(0, 5)}
+              </span>
+            )}
           </div>
         )}
         {task.tags && task.tags.length > 0 && (

@@ -17,9 +17,26 @@ interface Task {
     status: string;
     assigned_to?: string;
     due_date?: string;
+    start_time?: string;
+    end_time?: string;
     estimated_hours?: number;
     tags?: string[];
 }
+
+// Helper function to format date for input (handles ISO dates)
+const formatDateForInput = (dateStr?: string): string => {
+    if (!dateStr) return '';
+    // If already in yyyy-MM-dd format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Otherwise parse and format
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+    } catch {
+        return '';
+    }
+};
 
 export const TaskEdit: React.FC = () => {
     const navigate = useNavigate();
@@ -214,7 +231,9 @@ export const TaskEdit: React.FC = () => {
                             category: task.category as CreateTaskRequest['category'],
                             priority: task.priority as CreateTaskRequest['priority'],
                             assigned_to: task.assigned_to,
-                            due_date: task.due_date,
+                            due_date: formatDateForInput(task.due_date),
+                            start_time: task.start_time,
+                            end_time: task.end_time,
                             estimated_hours: task.estimated_hours,
                             tags: task.tags,
                         }}

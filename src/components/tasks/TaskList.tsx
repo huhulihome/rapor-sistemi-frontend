@@ -6,6 +6,7 @@ import { TaskFilters, type TaskFilterOptions } from './TaskFilters';
 import { supabase } from '../../services/supabase';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { TagIcon } from '@heroicons/react/24/outline';
 
 export const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,6 +15,8 @@ export const TaskList: React.FC = () => {
   const [filters, setFilters] = useState<TaskFilterOptions>({
     sort_by: 'created_at',
     sort_order: 'desc',
+    hideCompleted: true, // Default: hide completed tasks
+    groupByTag: true, // Default: group tasks by tags
   });
   const navigate = useNavigate();
 
@@ -113,6 +116,32 @@ export const TaskList: React.FC = () => {
     navigate(`/tasks/${taskId}`);
   };
 
+  // Filter completed tasks if hideCompleted is true
+  const filteredTasks = filters.hideCompleted
+    ? tasks.filter(task => task.status !== 'completed')
+    : tasks;
+
+  // Group tasks by tag if enabled
+  const groupTasksByTag = (taskList: Task[]) => {
+    const groups: Record<string, Task[]> = {};
+    const noTagKey = 'Etiketsiz';
+
+    taskList.forEach(task => {
+      if (task.tags && task.tags.length > 0) {
+        task.tags.forEach(tag => {
+          if (!groups[tag]) groups[tag] = [];
+          groups[tag].push(task);
+        });
+      } else {
+        if (!groups[noTagKey]) groups[noTagKey] = [];
+        groups[noTagKey].push(task);
+      }
+    });
+
+    // Sort groups by task count (descending)
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -140,7 +169,17 @@ export const TaskList: React.FC = () => {
     <div>
       <TaskFilters filters={filters} onFilterChange={setFilters} />
 
-      {tasks.length === 0 ? (
+      {/* Summary stats */}
+      <div className="flex items-center gap-4 mb-4 text-sm text-slate-400">
+        <span>{filteredTasks.length} görev</span>
+        {filters.hideCompleted && tasks.length !== filteredTasks.length && (
+          <span className="text-slate-500">
+            ({tasks.length - filteredTasks.length} tamamlanan gizlendi)
+          </span>
+        )}
+      </div>
+
+      {filteredTasks.length === 0 ? (
         <div className="glass-card p-10 rounded-xl text-center">
           <svg
             className="mx-auto h-12 w-12 text-slate-500"
@@ -157,16 +196,45 @@ export const TaskList: React.FC = () => {
           </svg>
           <h3 className="mt-3 text-base font-medium text-white">Görev bulunamadı</h3>
           <p className="mt-1 text-sm text-slate-400">
-            Seçili filtrelere uygun görev bulunmuyor.
+            {filters.hideCompleted
+              ? 'Aktif görev yok. Tamamlananları görmek için toggle\'ı değiştirin.'
+              : 'Seçili filtrelere uygun görev bulunmuyor.'}
           </p>
         </div>
+      ) : filters.groupByTag ? (
+        // Grouped by tag view
+        <div className="space-y-6">
+          {groupTasksByTag(filteredTasks).map(([tagName, tagTasks]) => (
+            <div key={tagName} className="space-y-3">
+              <div className="flex items-center gap-2 sticky top-0 bg-slate-900/80 backdrop-blur-sm py-2 z-10">
+                <TagIcon className="w-5 h-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">{tagName}</h3>
+                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full">
+                  {tagTasks.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {tagTasks.map((task) => (
+                  <TaskCard
+                    key={`${tagName}-${task.id}`}
+                    task={task}
+                    onClick={() => handleTaskClick(task.id)}
+                    showAssignee={true}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
+        // Normal grid view
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               onClick={() => handleTaskClick(task.id)}
+              showAssignee={true}
             />
           ))}
         </div>
