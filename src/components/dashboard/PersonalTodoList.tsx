@@ -19,6 +19,12 @@ interface Todo {
     due_date?: string;
     priority: 'low' | 'medium' | 'high';
     created_at: string;
+    user_id?: string;
+    user?: {
+        id: string;
+        full_name: string;
+        email: string;
+    };
 }
 
 interface TodoFormData {
@@ -36,7 +42,7 @@ const emptyFormData: TodoFormData = {
 };
 
 export const PersonalTodoList = () => {
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
     const toast = useToast();
     const [todos, setTodos] = useState<Todo[]>([]);
     const [loading, setLoading] = useState(true);
@@ -44,12 +50,13 @@ export const PersonalTodoList = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
     const [formData, setFormData] = useState<TodoFormData>(emptyFormData);
+    const [viewMode, setViewMode] = useState<'personal' | 'all'>('personal');
 
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
     useEffect(() => {
         fetchTodos();
-    }, [user, showCompleted]);
+    }, [user, showCompleted, viewMode]);
 
     const getAuthHeaders = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -64,6 +71,12 @@ export const PersonalTodoList = () => {
             setLoading(true);
             const headers = await getAuthHeaders();
             let url = `${apiUrl}/api/todos?limit=100`;
+
+            // Admin'de viewMode'a göre filtrele
+            if (isAdmin && viewMode === 'personal' && user?.id) {
+                url += `&user_id=${user.id}`;
+            }
+            // viewMode === 'all' ise backend tüm to-do'ları döner (admin için)
 
             if (!showCompleted) {
                 url += '&is_completed=false';
@@ -209,7 +222,9 @@ export const PersonalTodoList = () => {
                             <ClipboardDocumentListIcon className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold text-white">Kişisel Yapılacaklar</h3>
+                            <h3 className="text-lg font-semibold text-white">
+                                {isAdmin && viewMode === 'all' ? 'Tüm Yapılacaklar' : 'Kişisel Yapılacaklar'}
+                            </h3>
                             <p className="text-sm text-slate-400">
                                 {todos.length} öğe
                             </p>
@@ -238,6 +253,30 @@ export const PersonalTodoList = () => {
                     </div>
                 </div>
 
+                {/* Admin View Mode Tabs */}
+                {isAdmin && (
+                    <div className="flex gap-2 mb-4 p-1 bg-slate-800/50 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('personal')}
+                            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'personal'
+                                ? 'bg-emerald-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                        >
+                            📋 Benim To-Do'larım
+                        </button>
+                        <button
+                            onClick={() => setViewMode('all')}
+                            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'all'
+                                ? 'bg-emerald-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                        >
+                            👥 Tüm Kullanıcılar
+                        </button>
+                    </div>
+                )}
+
                 {/* Todo List */}
                 {todos.length === 0 ? (
                     <div className="text-center py-8">
@@ -251,57 +290,139 @@ export const PersonalTodoList = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-2 max-h-80 overflow-y-auto">
-                        {todos.map(todo => (
-                            <div
-                                key={todo.id}
-                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${todo.is_completed
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {isAdmin && viewMode === 'all' ? (
+                            // Admin "all users" view: Group todos by user
+                            (() => {
+                                // Group todos by user
+                                const grouped = todos.reduce((acc, todo) => {
+                                    const userName = todo.user?.full_name || 'Bilinmiyor';
+                                    const userId = todo.user?.id || todo.user_id || 'unknown';
+                                    const isOwnTodo = userId === user?.id;
+                                    const key = isOwnTodo ? '__own__' : userName;
+                                    if (!acc[key]) acc[key] = [];
+                                    acc[key].push(todo);
+                                    return acc;
+                                }, {} as Record<string, Todo[]>);
+
+                                // Sort keys: own todos first, then alphabetically
+                                const sortedKeys = Object.keys(grouped).sort((a, b) => {
+                                    if (a === '__own__') return -1;
+                                    if (b === '__own__') return 1;
+                                    return a.localeCompare(b, 'tr');
+                                });
+
+                                return sortedKeys.map(key => (
+                                    <div key={key} className="space-y-2">
+                                        <h4 className="text-sm font-semibold text-slate-300 border-b border-slate-700 pb-1">
+                                            {key === '__own__' ? '📋 Benim Yapılacaklarım' : `👤 ${key}`}
+                                        </h4>
+                                        {grouped[key].map(todo => (
+                                            <div
+                                                key={todo.id}
+                                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${todo.is_completed
+                                                    ? 'bg-slate-800/30 border-slate-700/50'
+                                                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                                                    }`}
+                                            >
+                                                <button
+                                                    onClick={() => handleToggleComplete(todo)}
+                                                    className={`shrink-0 p-1 rounded transition-all ${todo.is_completed
+                                                        ? 'bg-emerald-500/20 text-emerald-400'
+                                                        : 'bg-slate-700 text-slate-400 hover:text-emerald-400'
+                                                        }`}
+                                                >
+                                                    <CheckCircleIcon className="w-5 h-5" />
+                                                </button>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`font-medium truncate ${todo.is_completed ? 'text-slate-500 line-through' : 'text-white'
+                                                        }`}>
+                                                        {todo.title}
+                                                    </p>
+                                                    {todo.due_date && (
+                                                        <p className="text-xs text-slate-500">
+                                                            {new Date(todo.due_date).toLocaleDateString('tr-TR')}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <span className={`shrink-0 px-2 py-0.5 text-xs rounded ${priorityColors[todo.priority]}`}>
+                                                    {priorityLabels[todo.priority]}
+                                                </span>
+
+                                                <div className="flex gap-1 shrink-0">
+                                                    <button
+                                                        onClick={() => handleEdit(todo)}
+                                                        className="p-1 text-slate-400 hover:text-white rounded transition-all"
+                                                    >
+                                                        <PencilIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(todo.id)}
+                                                        className="p-1 text-slate-400 hover:text-red-400 rounded transition-all"
+                                                    >
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ));
+                            })()
+                        ) : (
+                            // Personal view (admin personal or regular user): Simple list
+                            todos.map(todo => (
+                                <div
+                                    key={todo.id}
+                                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${todo.is_completed
                                         ? 'bg-slate-800/30 border-slate-700/50'
                                         : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
-                                    }`}
-                            >
-                                <button
-                                    onClick={() => handleToggleComplete(todo)}
-                                    className={`shrink-0 p-1 rounded transition-all ${todo.is_completed
-                                            ? 'bg-emerald-500/20 text-emerald-400'
-                                            : 'bg-slate-700 text-slate-400 hover:text-emerald-400'
                                         }`}
                                 >
-                                    <CheckCircleIcon className="w-5 h-5" />
-                                </button>
+                                    <button
+                                        onClick={() => handleToggleComplete(todo)}
+                                        className={`shrink-0 p-1 rounded transition-all ${todo.is_completed
+                                            ? 'bg-emerald-500/20 text-emerald-400'
+                                            : 'bg-slate-700 text-slate-400 hover:text-emerald-400'
+                                            }`}
+                                    >
+                                        <CheckCircleIcon className="w-5 h-5" />
+                                    </button>
 
-                                <div className="flex-1 min-w-0">
-                                    <p className={`font-medium truncate ${todo.is_completed ? 'text-slate-500 line-through' : 'text-white'
-                                        }`}>
-                                        {todo.title}
-                                    </p>
-                                    {todo.due_date && (
-                                        <p className="text-xs text-slate-500">
-                                            {new Date(todo.due_date).toLocaleDateString('tr-TR')}
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`font-medium truncate ${todo.is_completed ? 'text-slate-500 line-through' : 'text-white'
+                                            }`}>
+                                            {todo.title}
                                         </p>
-                                    )}
-                                </div>
+                                        {todo.due_date && (
+                                            <p className="text-xs text-slate-500">
+                                                {new Date(todo.due_date).toLocaleDateString('tr-TR')}
+                                            </p>
+                                        )}
+                                    </div>
 
-                                <span className={`shrink-0 px-2 py-0.5 text-xs rounded ${priorityColors[todo.priority]}`}>
-                                    {priorityLabels[todo.priority]}
-                                </span>
+                                    <span className={`shrink-0 px-2 py-0.5 text-xs rounded ${priorityColors[todo.priority]}`}>
+                                        {priorityLabels[todo.priority]}
+                                    </span>
 
-                                <div className="flex gap-1 shrink-0">
-                                    <button
-                                        onClick={() => handleEdit(todo)}
-                                        className="p-1 text-slate-400 hover:text-white rounded transition-all"
-                                    >
-                                        <PencilIcon className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(todo.id)}
-                                        className="p-1 text-slate-400 hover:text-red-400 rounded transition-all"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex gap-1 shrink-0">
+                                        <button
+                                            onClick={() => handleEdit(todo)}
+                                            className="p-1 text-slate-400 hover:text-white rounded transition-all"
+                                        >
+                                            <PencilIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(todo.id)}
+                                            className="p-1 text-slate-400 hover:text-red-400 rounded transition-all"
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 )}
             </div>
