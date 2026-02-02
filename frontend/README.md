@@ -73,3 +73,4 @@ src/
 - ✅ Type-safe development
 - ✅ Path aliases (@/ imports)
 - ✅ ESLint konfigürasyonu
+- ✅ Task Checklist feature (NEW!)
