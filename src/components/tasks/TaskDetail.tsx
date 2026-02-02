@@ -7,6 +7,7 @@ import { supabase } from '../../services/supabase';
 import { Layout } from '../common/Layout';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { classNames } from '../../utils/classNames';
+import { TaskChecklist } from './TaskChecklist';
 
 const statusLabels = {
   not_started: 'Başlamadı',
@@ -348,6 +349,9 @@ export const TaskDetail: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Checklist Section */}
+        <TaskChecklist taskId={id!} />
       </div>
 
       {/* Status Update Modal */}
