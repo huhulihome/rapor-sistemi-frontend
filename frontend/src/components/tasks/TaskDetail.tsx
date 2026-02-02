@@ -349,6 +349,9 @@ export const TaskDetail: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Checklist Section */}
+        <TaskChecklist taskId={id!} />
       </div>
 
       {/* Status Update Modal */}
@@ -469,9 +472,6 @@ export const TaskDetail: React.FC = () => {
           </div>
         </div>
       </Modal>
-
-      {/* Checklist Section */}
-      <TaskChecklist taskId={id!} />
     </Layout>
   );
 };
